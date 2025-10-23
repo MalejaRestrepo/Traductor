@@ -1,37 +1,139 @@
 import os
 import streamlit as st
 from bokeh.models.widgets import Button
-#from bokeh.io import show
-#from bokeh.models import Button
 from bokeh.models import CustomJS
 from streamlit_bokeh_events import streamlit_bokeh_events
 from PIL import Image
 import time
 import glob
-
-
-
 from gtts import gTTS
 from googletrans import Translator
 
+# CONFIGURACIÓN GENERAL
+st.set_page_config(
+    page_title="Traductor de Voz",
+    page_icon="🎤",
+    layout="centered",
+    initial_sidebar_state="expanded"
+)
 
-st.title("TRADUCTOR.")
-st.subheader("Escucho lo que quieres traducir.")
+# 🎨 ESTILOS VISUALES — Paleta lavanda-celeste con contraste mejorado
+st.markdown("""
+    <style>
+    /* Fondo principal */
+    [data-testid="stAppViewContainer"] {
+        background: linear-gradient(180deg, #e6e4ff 0%, #d9f4ff 100%);
+        color: #1f244b;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    /* Contenedor principal */
+    .block-container {
+        background: #f9faff;
+        border: 1px solid #c0d3ff;
+        border-radius: 16px;
+        padding: 2rem 2.2rem;
+        box-shadow: 0 10px 24px rgba(31, 36, 75, 0.12);
+    }
+
+    /* Títulos */
+    h1, h2, h3 {
+        color: #1f244b;
+        text-align: center;
+        font-weight: 700;
+    }
+
+    /* Textos */
+    p, label, span, div {
+        color: #1f244b;
+    }
+
+    /* Sidebar */
+    section[data-testid="stSidebar"] {
+        background: #eaf3ff;
+        border-right: 2px solid #bcd6ff;
+        color: #1e1c3a;
+    }
+    section[data-testid="stSidebar"] * {
+        color: #1e1c3a !important;
+    }
+
+    /* Botones */
+    div.stButton > button, .bk-root .bk-btn {
+        background: linear-gradient(90deg, #b9a6ff 0%, #9be4ff 100%) !important;
+        color: #1f244b !important;
+        font-weight: 700 !important;
+        border-radius: 10px !important;
+        border: 1px solid #9fcaff !important;
+        box-shadow: 0 6px 14px rgba(31, 36, 75, 0.18) !important;
+        font-size: 16px !important;
+        padding: 9px 24px !important;
+        transition: all 0.2s ease !important;
+    }
+
+    div.stButton > button:hover, .bk-root .bk-btn:hover {
+        background: linear-gradient(90deg, #a694ff 0%, #8fd8ff 100%) !important;
+        transform: translateY(-1px);
+    }
+
+    /* Selects oscuros */
+    div[data-baseweb="select"] {
+        background-color: #2b2b33 !important;
+        color: #ffffff !important;
+        border-radius: 10px !important;
+        border: 1px solid #3c3c4a !important;
+    }
+    div[data-baseweb="select"] * {
+        color: #ffffff !important;
+    }
+
+    /* Checkboxes */
+    div[data-baseweb="checkbox"] label {
+        color: #1f244b !important;
+    }
+
+    /* Audio player */
+    audio {
+        border-radius: 10px;
+        border: 2px solid #8db8ff;
+    }
+
+    /* Barra superior Streamlit */
+    [data-testid="stHeader"] {
+        background: linear-gradient(90deg, #7c9eff 0%, #b0c3ff 100%) !important;
+        color: white !important;
+        height: 3.5rem;
+        box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.25);
+    }
+
+    [data-testid="stToolbar"] {
+        right: 1rem;
+        top: 0.5rem;
+        color: white !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 
-image = Image.open('OIG7.jpg')
+# TÍTULOS PRINCIPALES
+st.title("🎧 Traductor de Voz")
+st.subheader("Escucho lo que dices, lo traduzco y te lo leo en voz alta.")
 
-st.image(image,width=300)
+# IMAGEN PRINCIPAL
+if os.path.exists("OIG7.jpg"):
+    image = Image.open("OIG7.jpg")
+    st.image(image, width=320)
+else:
+    st.info("Sube una imagen llamada **OIG7.jpg** para personalizar el diseño.")
+
+# SIDEBAR
 with st.sidebar:
-    st.subheader("Traductor.")
-    st.write("Presiona el botón, cuando escuches la señal "
-                 "habla lo que quieres traducir, luego selecciona"   
-                 " la configuración de lenguaje que necesites.")
+    st.subheader("🪄 Instrucciones")
+    st.write("Presiona el botón de **Escuchar**, habla lo que quieras traducir y luego selecciona los idiomas y acento para generar el audio traducido.")
 
-
-st.write("Toca el Botón y habla lo que quires traducir")
-
-stt_button = Button(label=" Escuchar  🎤", width=300,  height=50)
+# BOTÓN DE ESCUCHA
+st.markdown("### 🎙️ Pulsa el botón y habla lo que quieras traducir")
+stt_button = Button(label="🎤 Escuchar", width=300, height=50)
 
 stt_button.js_on_event("button_click", CustomJS(code="""
     var recognition = new webkitSpeechRecognition();
@@ -45,12 +147,12 @@ stt_button.js_on_event("button_click", CustomJS(code="""
                 value += e.results[i][0].transcript;
             }
         }
-        if ( value != "") {
+        if (value != "") {
             document.dispatchEvent(new CustomEvent("GET_TEXT", {detail: value}));
         }
     }
     recognition.start();
-    """))
+"""))
 
 result = streamlit_bokeh_events(
     stt_button,
@@ -58,127 +160,88 @@ result = streamlit_bokeh_events(
     key="listen",
     refresh_on_update=False,
     override_height=75,
-    debounce_time=0)
+    debounce_time=0
+)
 
 if result:
     if "GET_TEXT" in result:
-        st.write(result.get("GET_TEXT"))
+        st.markdown("### 📝 Texto detectado:")
+        st.success(result.get("GET_TEXT"))
+
     try:
         os.mkdir("temp")
     except:
         pass
-    st.title("Texto a Audio")
+
     translator = Translator()
-    
     text = str(result.get("GET_TEXT"))
+
+    st.markdown("### 🌐 Configuración de traducción")
+
     in_lang = st.selectbox(
-        "Selecciona el lenguaje de Entrada",
+        "Lenguaje de entrada",
         ("Inglés", "Español", "Bengali", "Coreano", "Mandarín", "Japonés"),
     )
-    if in_lang == "Inglés":
-        input_language = "en"
-    elif in_lang == "Español":
-        input_language = "es"
-    elif in_lang == "Bengali":
-        input_language = "bn"
-    elif in_lang == "Coreano":
-        input_language = "ko"
-    elif in_lang == "Mandarín":
-        input_language = "zh-cn"
-    elif in_lang == "Japonés":
-        input_language = "ja"
-    
+    lang_map = {
+        "Inglés": "en", "Español": "es", "Bengali": "bn",
+        "Coreano": "ko", "Mandarín": "zh-cn", "Japonés": "ja"
+    }
+    input_language = lang_map.get(in_lang, "en")
+
     out_lang = st.selectbox(
-        "Selecciona el lenguaje de salida",
+        "Lenguaje de salida",
         ("Inglés", "Español", "Bengali", "Coreano", "Mandarín", "Japonés"),
     )
-    if out_lang == "Inglés":
-        output_language = "en"
-    elif out_lang == "Español":
-        output_language = "es"
-    elif out_lang == "Bengali":
-        output_language = "bn"
-    elif out_lang == "Coreano":
-        output_language = "ko"
-    elif out_lang == "Mandarín":
-        output_language = "zh-cn"
-    elif out_lang == "Japonés":
-        output_language = "ja"
-    
+    output_language = lang_map.get(out_lang, "es")
+
     english_accent = st.selectbox(
-        "Selecciona el acento",
+        "Acento del audio",
         (
             "Defecto",
             "Español",
             "Reino Unido",
             "Estados Unidos",
-            "Canada",
+            "Canadá",
             "Australia",
             "Irlanda",
             "Sudáfrica",
         ),
     )
-    
-    if english_accent == "Defecto":
-        tld = "com"
-    elif english_accent == "Español":
-        tld = "com.mx"
-    
-    elif english_accent == "Reino Unido":
-        tld = "co.uk"
-    elif english_accent == "Estados Unidos":
-        tld = "com"
-    elif english_accent == "Canada":
-        tld = "ca"
-    elif english_accent == "Australia":
-        tld = "com.au"
-    elif english_accent == "Irlanda":
-        tld = "ie"
-    elif english_accent == "Sudáfrica":
-        tld = "co.za"
-    
-    
+
+    accent_map = {
+        "Defecto": "com", "Español": "com.mx", "Reino Unido": "co.uk",
+        "Estados Unidos": "com", "Canadá": "ca", "Australia": "com.au",
+        "Irlanda": "ie", "Sudáfrica": "co.za"
+    }
+    tld = accent_map.get(english_accent, "com")
+
     def text_to_speech(input_language, output_language, text, tld):
         translation = translator.translate(text, src=input_language, dest=output_language)
         trans_text = translation.text
         tts = gTTS(trans_text, lang=output_language, tld=tld, slow=False)
-        try:
-            my_file_name = text[0:20]
-        except:
-            my_file_name = "audio"
+        my_file_name = text[:20] if text else "audio"
         tts.save(f"temp/{my_file_name}.mp3")
         return my_file_name, trans_text
-    
-    
-    display_output_text = st.checkbox("Mostrar el texto")
-    
-    if st.button("convertir"):
+
+    display_output_text = st.checkbox("Mostrar texto traducido")
+
+    if st.button("✨ Convertir a Audio"):
         result, output_text = text_to_speech(input_language, output_language, text, tld)
         audio_file = open(f"temp/{result}.mp3", "rb")
         audio_bytes = audio_file.read()
-        st.markdown(f"## Tú audio:")
+        st.markdown("#### 🎧 Audio generado:")
         st.audio(audio_bytes, format="audio/mp3", start_time=0)
-    
+
         if display_output_text:
-            st.markdown(f"## Texto de salida:")
-            st.write(f" {output_text}")
-    
-    
+            st.markdown("#### 💬 Texto traducido:")
+            st.info(output_text)
+
     def remove_files(n):
-        mp3_files = glob.glob("temp/*mp3")
-        if len(mp3_files) != 0:
-            now = time.time()
-            n_days = n * 86400
-            for f in mp3_files:
-                if os.stat(f).st_mtime < now - n_days:
-                    os.remove(f)
-                    print("Deleted ", f)
+        mp3_files = glob.glob("temp/*.mp3")
+        now = time.time()
+        n_days = n * 86400
+        for f in mp3_files:
+            if os.stat(f).st_mtime < now - n_days:
+                os.remove(f)
 
     remove_files(7)
-           
-
-
-        
-    
-
-
